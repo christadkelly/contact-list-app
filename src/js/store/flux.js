@@ -1,6 +1,8 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
+			contacts: [],
+			APIurl: 'https://playground.4geeks.com/apis/fake/contact/agenda/cdkelly',
 			demo: [
 				{
 					title: "FIRST",
@@ -15,6 +17,17 @@ const getState = ({ getStore, getActions, setStore }) => {
 			]
 		},
 		actions: {
+			getAPI: async () => {
+				const store = getStore();
+				try{
+					const response = await fetch(store.APIurl);
+					const APIcontacts = await response.json();
+					setStore({ contacts: APIcontacts});
+				} catch (error) {
+					console.log('This is an error', error)
+				}
+				console.log(store.contacts)
+			},
 			// Use getActions to call a function within a fuction
 			exampleFunction: () => {
 				getActions().changeColor(0, "green");
