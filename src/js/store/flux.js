@@ -1,58 +1,98 @@
+import React, { useState, useEffect } from 'react'
+
 const getState = ({ getStore, getActions, setStore }) => {
+
 	return {
 		store: {
-			contacts: [],
-			APIurl: 'https://playground.4geeks.com/apis/fake/contact/agenda/cdkelly',
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				}
+			contacts: [
+				
 			]
 		},
 		actions: {
+			fetchAPI: async (url, method, body) => {
+				try {
+					const response = await fetch(url, {
+						method: method,    
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: body,
+						json: true
+					})
+					if(method === 'GET') {
+						const newApiContacts = await response.json();
+						setStore({contacts: newApiContacts});
+					}
+				} catch (error) {console.log('error', error)};
+			},
 			getAPI: async () => {
-				const store = getStore();
-				try{
-					const response = await fetch(store.APIurl);
-					const APIcontacts = await response.json();
-					setStore({ contacts: APIcontacts});
-				} catch (error) {
-					console.log('This is an error', error)
-				}
-				console.log(store.contacts)
+				const url = 'https://playground.4geeks.com/apis/fake/contact/agenda/cdkelly';
+				const method = 'GET';
+				const body = undefined;
+				getActions().fetchAPI(url, method, body);
 			},
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
-			},
-			loadSomeData: () => {
-				/**
-					fetch().then().then(data => setStore({ "foo": data.bar }))
-				*/
-			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
-
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
+			addContact: (contact) => {
+				const currentContacts = getStore().contacts;
+				const idx = currentContacts.length;
+				const newContacts = currentContacts.toSpliced(idx,0,contact);
+				setStore({contacts: newContacts});
+				const url = 'https://playground.4geeks.com/apis/fake/contact/';
+				const method = 'POST';
+				const body = JSON.stringify({
+					'full_name': contact.full_name,
+					'email': contact.email,
+					'phone': contact.phone,
+					'address': contact.address,
+					'agenda_slug': 'cdkelly',
 				});
-
-				//reset the global store
-				setStore({ demo: demo });
+				getActions().fetchAPI(url, method, body);
+			},
+			editContact: async (contact, index) => {
+				const tempContacts = getStore().contacts.toSpliced(index, 1, contact);
+				await setStore({ contacts: tempContacts });
+				const url = `https://playground.4geeks.com/apis/fake/contact/${contact.id}`;
+				const method = 'PUT';
+				const body = JSON.stringify({
+					"full_name": contact.full_name,
+					"email": contact.email,
+					"agenda_slug": "cdkelly",
+					"address": contact.address,
+					"phone": contact.phone,
+					})
+				getActions().fetchAPI(url, method, body)
+			  },
+			 deleteContact: async (contactid) => {
+				let currentContacts = getStore().contacts;
+				let filterContacts = currentContacts.filter((item) => {
+					return item.id !== contactid;
+				})
+				setStore({contacts: filterContacts})
+				const url = `https://playground.4geeks.com/apis/fake/contact/${contactid}`;
+				const method = 'DELETE';
+				const body = JSON.stringify('');
+				getActions().fetchAPI(url, method, body);
+			},
+			formSubmitHandler: (e, idx) => {
+				if(idx === undefined) {
+					getActions().addContact({
+						'full_name':e.target.elements.full_name.value,
+						'email': e.target.elements.email.value,
+						'phone': e.target.elements.phone.value,
+						'address': e.target.elements.address.value,
+					})
+				}
+				else {
+					getActions().editContact({
+						'full_name': e.target.elements.full_name.value,
+						'email': e.target.elements.email.value,
+						'phone': e.target.elements.phone.value,
+						'address': e.target.elements.address.value,
+						'id': getStore().contacts[idx].id
+					},idx)
+				}
 			}
 		}
-	};
+	}
 };
 
 export default getState;
